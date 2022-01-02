@@ -5,10 +5,8 @@ import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.TokenRange;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-import com.github.javaparser.metamodel.MethodCallExprMetaModel;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
@@ -32,60 +30,19 @@ public class ClassParser {
 
 	public static List<ClassInfo> classes = new ArrayList<ClassInfo>();
 
-	// to be removed
-	// TokenFileWriter literals = new TokenFileWriter("literals.txt");
-	/*
-	 * HashSet<String> keywords= new HashSet<String>(); HashSet<String> identifiers=
-	 * new HashSet<String>(); HashSet<String> literals= new HashSet<String>();
-	 * HashSet<String> separators= new HashSet<String>(); HashSet<String> operators=
-	 * new HashSet<String>(); HashSet<String> others= new HashSet<String>();
-	 */
-
 	public ClassParser(File projectDir, String parsingPath) {
 		projectDirectoryPath = projectDir;
 		dirPath = parsingPath;
 	}
 
 	public void ParseJavaCode() {
-
-		// FillClassInfoDict();
 		JavaIdentifier.SetPredefinedClasses();
 		JavaIdentifier.SetPredefinedMethods();
 		IterateOnProjectDirectory(projectDirectoryPath);
 		ProcessAllClasses();
 	}
 
-	/*
-	 * private void WriteTokens() { TokenFileWriter tokensFile = new
-	 * TokenFileWriter("literals.txt"); tokensFile.WriteLineToFile("literals");
-	 * for(String w: literals) tokensFile.WriteLineToFile(w);
-	 * 
-	 * tokensFile.WriteLineToFile("Keywords"); for(String w: keywords)
-	 * tokensFile.WriteLineToFile(w); tokensFile.WriteLineToFile(
-	 * "============================================================");
-	 * 
-	 * tokensFile.WriteLineToFile("identifiers"); for(String w: identifiers)
-	 * tokensFile.WriteLineToFile(w); tokensFile.WriteLineToFile(
-	 * "============================================================");
-	 * 
-	 * tokensFile.WriteLineToFile("literals"); for(String w: literals)
-	 * tokensFile.WriteLineToFile(w); tokensFile.WriteLineToFile(
-	 * "============================================================");
-	 * 
-	 * tokensFile.WriteLineToFile("separators"); for(String w: separators)
-	 * tokensFile.WriteLineToFile(w); tokensFile.WriteLineToFile(
-	 * "============================================================");
-	 * 
-	 * tokensFile.WriteLineToFile("operators"); for(String w: operators)
-	 * tokensFile.WriteLineToFile(w); tokensFile.WriteLineToFile(
-	 * "============================================================");
-	 * 
-	 * tokensFile.WriteLineToFile("others"); for(String w: others)
-	 * tokensFile.WriteLineToFile(w); tokensFile.WriteLineToFile(
-	 * "============================================================");
-	 * 
-	 * tokensFile.CloseFile(); }
-	 */
+
 	public void IterateOnProjectDirectory(File projectDir) {
 		new DirExplorer((level, path, file) -> path.endsWith(".java"), (level, path, file) -> {
 
@@ -114,24 +71,6 @@ public class ClassParser {
 		classInfo.setTokens(n.getTokenRange());
 		JavaIdentifier.AddClassTokens(n, classInfo);
 
-		ClassOrInterfaceType nodeType;
-		//List<ClassOrInterfaceType> predefinedClasses= n.getNodesByType(nodeType);
-		List<Node> nodes = n.getChildNodes();
-		/*
-		for(Node node: nodes) {
-			List<ClassOrInterfaceType> predefinedClasses= node.findAll(nodeType);
-		}
-		*/
-		
-		/*
-		List<ClassOrInterfaceType> predefinedClasses = unmodifiableList(
-				n.getChildNodes().stream().filter(m -> m instanceof ClassOrInterfaceType)
-						.map(m -> (ClassOrInterfaceType) m).collect(toList()));
-		
-		List<MethodCallExpr> predefinedMethods = unmodifiableList(
-				n.getChildNodes().stream().filter(m -> m instanceof MethodCallExpr)
-						.map(m -> (MethodCallExpr) m).collect(toList()));
-		*/
 		classes.add(classInfo);
 	}
 

@@ -13,7 +13,7 @@ import com.github.javaparser.ast.body.Parameter;
 
 public class JavaIdentifier {
 
-	private static Hashtable<String, Integer> predefinedClasses = new Hashtable<String, Integer>();
+	static Hashtable<String, Integer> predefinedClasses = new Hashtable<String, Integer>();
 	private static Hashtable<String, Integer> predefinedMethods = new Hashtable<String, Integer>();
 	private static Hashtable<String, Integer> classesDict = new Hashtable<String, Integer>();
 
@@ -46,8 +46,24 @@ public class JavaIdentifier {
 		predefinedClasses.put("HashSet", Constants.Class_Token + (++Constants.classIterator));
 		predefinedClasses.put("Hashtable", Constants.Class_Token + (++Constants.classIterator));
 		predefinedClasses.put("HashMap", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("DocumentBuilderFactory", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("Node", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("NamedNodeMap", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("ArrayList", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("Document", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("SAXException", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("NodeList", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("NumberFormatException", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("FileInputStream", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("FileOutputStream", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("DataInputStream", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("DataOutputStream", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("StringTokenizer", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("FileReader", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("FileWriter", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("File", Constants.Class_Token + (++Constants.classIterator));
+		
 	}
-
 	public static void SetPredefinedMethods() {
 		// String Methods
 		predefinedMethods.put("toString", Constants.Method_Token + (++Constants.methodIterator));
@@ -59,7 +75,7 @@ public class JavaIdentifier {
 		predefinedMethods.put("add", Constants.Method_Token + (++Constants.methodIterator));
 		predefinedMethods.put("arraycopy", Constants.Method_Token + (++Constants.methodIterator));
 	}
-
+	
 	public static void AddClassTokens(ClassOrInterfaceDeclaration n, ClassInfo classInfo) {
 		if (!classesDict.containsKey(classInfo.getName())) {
 			classesDict.put(classInfo.getName(), Constants.Class_Token + (++Constants.classIterator));
