@@ -1,13 +1,9 @@
 package JavaTokenizer;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Optional;
-
 import com.github.javaparser.JavaToken;
-import com.github.javaparser.Position;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.ConstructorDeclaration;
@@ -20,10 +16,6 @@ public class JavaIdentifier {
 	private static Hashtable<String, Integer> predefinedClasses = new Hashtable<String, Integer>();
 	private static Hashtable<String, Integer> predefinedMethods = new Hashtable<String, Integer>();
 	private static Hashtable<String, Integer> classesDict = new Hashtable<String, Integer>();
-	// private static Hashtable<String, List<ClassIdentifier>> classesDict = new
-	// Hashtable<String, List<ClassIdentifier>>();
-	// private static Hashtable<String,ClassIdentifier> sameClassesNames = new
-	// Hashtable<String,ClassIdentifier>();
 
 	private String latestCalledClass;
 	private String latestCalledMethod;
@@ -52,8 +44,8 @@ public class JavaIdentifier {
 		predefinedClasses.put("Serializable", Constants.Class_Token + (++Constants.classIterator));
 		predefinedClasses.put("StringBuffer", Constants.Class_Token + (++Constants.classIterator));
 		predefinedClasses.put("HashSet", Constants.Class_Token + (++Constants.classIterator));
-		
-		
+		predefinedClasses.put("Hashtable", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("HashMap", Constants.Class_Token + (++Constants.classIterator));
 	}
 
 	public static void SetPredefinedMethods() {
@@ -65,15 +57,11 @@ public class JavaIdentifier {
 		predefinedMethods.put("length", Constants.Method_Token + (++Constants.methodIterator));
 		predefinedMethods.put("append", Constants.Method_Token + (++Constants.methodIterator));
 		predefinedMethods.put("add", Constants.Method_Token + (++Constants.methodIterator));
+		predefinedMethods.put("arraycopy", Constants.Method_Token + (++Constants.methodIterator));
 	}
 
 	public static void AddClassTokens(ClassOrInterfaceDeclaration n, ClassInfo classInfo) {
-		if (classesDict.containsKey(classInfo.getName())) {
-			System.out.println(
-					"Class: " + classInfo.getName() + " for path: " + classInfo.getPath() + " is already found ");
-			// sameClassesNames.add(classInfo.getName());
-
-		} else {
+		if (!classesDict.containsKey(classInfo.getName())) {
 			classesDict.put(classInfo.getName(), Constants.Class_Token + (++Constants.classIterator));
 			AddFieldsTokens(n.getFields(), classInfo);
 			AddMethodsTokens(n.getMethods(), classInfo);
@@ -119,9 +107,7 @@ public class JavaIdentifier {
 	private static void AddMethodsTokens(List<MethodDeclaration> methods, ClassInfo classInfo) {
 		for (MethodDeclaration m : methods) {
 
-			if (classInfo.getMethodsDict().containsKey(m.getName().toString())) {
-				System.out.println(m.getName().toString() + " method is already found");
-			} else {
+			if (!classInfo.getMethodsDict().containsKey(m.getName().toString())) {
 				classInfo.getMethodsDict().put(m.getName().toString(),
 						Constants.Method_Token + (++Constants.methodIterator));
 			}

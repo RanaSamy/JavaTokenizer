@@ -1,13 +1,6 @@
 package JavaTokenizer;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.StreamTokenizer;
-
-import com.github.javaparser.JavaParser;
-import com.github.javaparser.ParseResult;
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.type.Type;
 
 public class Main {
 

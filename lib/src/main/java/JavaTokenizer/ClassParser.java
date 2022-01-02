@@ -1,39 +1,21 @@
 package JavaTokenizer;
 
-import com.github.javaparser.JavaParser;
 import com.github.javaparser.JavaToken;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.TokenRange;
-import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.FieldDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.body.TypeDeclaration;
-import com.github.javaparser.ast.expr.BinaryExpr;
-import com.github.javaparser.ast.expr.BinaryExpr.Operator;
-import com.github.javaparser.ast.expr.SimpleName;
-import com.github.javaparser.ast.nodeTypes.NodeWithIdentifier;
-import com.github.javaparser.ast.visitor.GenericVisitor;
-import com.github.javaparser.ast.visitor.ModifierVisitor;
-import com.github.javaparser.ast.visitor.Visitable;
+import com.github.javaparser.ast.expr.MethodCallExpr;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-import com.github.javaparser.utils.SourceRoot;
-import com.google.common.base.Strings;
+import com.github.javaparser.metamodel.MethodCallExprMetaModel;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
-
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Optional;
 
@@ -128,13 +110,28 @@ public class ClassParser {
 		classInfo.setName(n.getName().toString());
 		classInfo.setPath(file.getAbsolutePath());
 		classInfo.setParentClass(SetParentClassName(n));
-
 		classInfo.setInnerClasses(GetInnerClassesForClassOrInterfaceDeclaration(n));
-		// RemoveOtherClassesFromSameFile(n);
-		// ((CompilationUnit) n).recalculatePositions();
 		classInfo.setTokens(n.getTokenRange());
 		JavaIdentifier.AddClassTokens(n, classInfo);
 
+		ClassOrInterfaceType nodeType;
+		//List<ClassOrInterfaceType> predefinedClasses= n.getNodesByType(nodeType);
+		List<Node> nodes = n.getChildNodes();
+		/*
+		for(Node node: nodes) {
+			List<ClassOrInterfaceType> predefinedClasses= node.findAll(nodeType);
+		}
+		*/
+		
+		/*
+		List<ClassOrInterfaceType> predefinedClasses = unmodifiableList(
+				n.getChildNodes().stream().filter(m -> m instanceof ClassOrInterfaceType)
+						.map(m -> (ClassOrInterfaceType) m).collect(toList()));
+		
+		List<MethodCallExpr> predefinedMethods = unmodifiableList(
+				n.getChildNodes().stream().filter(m -> m instanceof MethodCallExpr)
+						.map(m -> (MethodCallExpr) m).collect(toList()));
+		*/
 		classes.add(classInfo);
 	}
 
@@ -146,7 +143,9 @@ public class ClassParser {
 		}
 		return null;
 	}
-
+	    
+	   
+	
 	private List<ClassInfo> GetInnerClassesForClassOrInterfaceDeclaration(ClassOrInterfaceDeclaration n) {
 		List<ClassOrInterfaceDeclaration> internalClasses = unmodifiableList(
 				n.getMembers().stream().filter(m -> m instanceof ClassOrInterfaceDeclaration)
@@ -175,78 +174,12 @@ public class ClassParser {
 		classes.remove(innerClassInfo);
 		return innerClassInfo;
 	}
-	/*
-	 * protected void FillClassInfoDict() {
-	 * 
-	 * String filePath="C:\\Users\\Rana\\Desktop\\Attribute_Code.java"; SourceRoot
-	 * sourceRoot = new SourceRoot(Paths.get(filePath)); CompilationUnit
-	 * cu=sourceRoot.parse("", filePath); cu.accept( new ModifierVisitor<Void>() {
-	 * 
-	 * @Override public Visitable visit(ClassOrInterfaceDeclaration n, Void arg) {
-	 * RemoveOtherClassesFromSameFile(n); return super.visit(n, arg); } }, null);
-	 * sourceRoot.saveAll(Paths.get(filePath)); //RemoveOtherClassesFromSameFile(n);
-	 * sourceRoot.saveAll(); //n.getTokenRange();
-	 * 
-	 * 
-	 * }
-	 */
-	/*
-	 * protected void FillClassInfoDict(ClassOrInterfaceDeclaration n, File file) {
-	 * CompilationUnit compilationUnit; ClassInfo classInfo = new ClassInfo();
-	 * classInfo.setName(n.getName().toString());
-	 * classInfo.setPath(file.getAbsolutePath()); RemoveOtherClassesFromSameFile(n);
-	 * if (n.getParentNode().isPresent() && n.getParentNode().get() instanceof
-	 * CompilationUnit) { compilationUnit=(CompilationUnit) n.getParentNode().get();
-	 * compilationUnit.getTokenRange(); compilationUnit.recalculatePositions();
-	 * compilationUnit.getTokenRange();
-	 * 
-	 * } //classInfo.setTokens(n.getTokenRange());
-	 * classInfo.setTokens(n.getTokenRange()); List<Optional<TokenRange>> tokens=
-	 * unmodifiableList( n.getChildNodes().stream().filter(m -> ! (m instanceof
-	 * ClassOrInterfaceDeclaration)) .map(m ->
-	 * m.getTokenRange()).collect(toList())); JavaIdentifier.AddClassTokens(n,
-	 * classInfo);
-	 * 
-	 * classes.add(classInfo); }
-	 */
-
-	private void RemoveOtherClassesFromSameFile(ClassOrInterfaceDeclaration n) {
-		List<ClassOrInterfaceDeclaration> internalClasses = unmodifiableList(
-				n.getMembers().stream().filter(m -> m instanceof ClassOrInterfaceDeclaration)
-						.map(m -> (ClassOrInterfaceDeclaration) m).collect(toList()));
-		for (ClassOrInterfaceDeclaration c : internalClasses)
-			n.remove(c);
-	}
-
-	/*
-	 * private void hamada(ClassOrInterfaceDeclaration n) { CompilationUnit
-	 * compilationUnit = JavaParser.parse(rFile); TypeDeclaration resourceClass =
-	 * compilationUnit.getTypes().get(0);
-	 * 
-	 * for (Node node : resourceClass.getChildNodes()) { if (node instanceof
-	 * ClassOrInterfaceDeclaration) {
-	 * addResourceType(Arrays.asList(SUPPORTED_TYPES), result,
-	 * (ClassOrInterfaceDeclaration) node, useLegacyTypes); } } }
-	 */
-	/*
-	 * public void IterateOnProjectDirectory(File projectDir) { new
-	 * DirExplorer((level, path, file) -> path.endsWith(".java"), (level, path,
-	 * file) -> { System.out.println(path); System.out.println(Strings.repeat("=",
-	 * path.length())); try { new VoidVisitorAdapter<Object>() {
-	 * 
-	 * @Override public void visit(ClassOrInterfaceDeclaration n, Object arg) {
-	 * super.visit(n, arg); System.out.println(" * " + n.getName());
-	 * SetClassOrInterfaceInfo(n, path); } }.visit(StaticJavaParser.parse(file),
-	 * null); System.out.println(); // empty line } catch (IOException e) {
-	 * System.out.println(e); } }).explore(projectDir);
-	 * 
-	 * }
-	 */
+	
+	
 	private String GetFilePath(String string, String path) {
 		String parent = Paths.get(path).getParent().getFileName().toString();
 		String filePath = dirPath + (parent + "_" + string + ".txt");
 		return filePath;
-		// return path;
 	}
 
 	protected void ProcessAllClasses() {
@@ -292,53 +225,36 @@ public class ClassParser {
 	protected void TokenizeCode(ClassInfo classInfo, JavaToken token, TokenFileWriter tokensFile) {
 
 		if (token.getCategory().isWhitespaceOrComment()) {
-			// tokensFile.WriteLineToFile(token.getText() + " isWhitespaceOrComment");
-			// System.out.println(token.getText()+" isWhitespaceOrComment");
 
 		} else if (token.getCategory().isIdentifier()) {
 			tokensFile.WriteLineToFile("Identifier");
 			tokensFile.WriteLineToFile(
 					token.getText() + "	->	" + javaIdentifier.GetIdentifierToken(token, classInfo, tokensFile));
 			tokensFile.WriteLineToFile("---------------------------------------------------");
-			// System.out.println(token.get);
-			// identifiers.add(token.getText());
-			// System.out.println(token.getText()+" isIdentifier");
 
 		} else if (token.getCategory().isKeyword()) {
 			tokensFile.WriteLineToFile("Keyword");
 			tokensFile.WriteLineToFile(token.getText() + "	->	" + javaKeyword.javaKeywordsDict.get(token.getText()));
 			tokensFile.WriteLineToFile("---------------------------------------------------");
-			// keywords.add(token.getText());
-			// System.out.println(token.getText()+" isKeyword");
 
 		} else if (token.getCategory().isLiteral()) {
 			tokensFile.WriteLineToFile("Literal");
 			tokensFile.WriteLineToFile(token.getText() + "	->	" + javaLiteral.GetLiteral(token));
 			tokensFile.WriteLineToFile("---------------------------------------------------");
-			// literals.WriteLineToFile(token.getText()+" "+token.getKind());
-			// literals.add(token.getText());
-			// System.out.println(token.getText()+" isLiteral");
 
 		} else if (token.getCategory().isSeparator()) {
 			tokensFile.WriteLineToFile("Separator");
 			tokensFile.WriteLineToFile(
 					token.getText() + "	->	" + javaSeparator.javaSeparatorsDict.get(token.getText()));
 			tokensFile.WriteLineToFile("---------------------------------------------------");
-			// separators.add(token.getText());
-			// System.out.println(token.getText()+" isSeparator");
 
 		} else if (token.getCategory().isOperator()) {
 			tokensFile.WriteLineToFile("Operator");
 			tokensFile.WriteLineToFile(
 					token.getText() + "	->	" + javaOperator.javaOperatorsDict.get(token.getText()));
 			tokensFile.WriteLineToFile("---------------------------------------------------");
-			// operators.add(token.getText());
-			// System.out.println(token.getText()+" isOperator");
+		
 		}
-		// Java keyword ?
-		// Java char?
-		// number ?
-		// word: method name/ class name/ Identifier
 
 	}
 }
