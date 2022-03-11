@@ -17,9 +17,9 @@ public class TokenFileWriter {
 		}
 	}
 
-	public void WriteToFile(String line) {
+	public void WriteToFile(Integer integer) {
 		try {
-			fileWriter.write(line);
+			fileWriter.write(integer+" ");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

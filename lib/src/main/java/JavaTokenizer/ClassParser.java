@@ -5,30 +5,35 @@ import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.TokenRange;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-
 import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.toList;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class ClassParser {
 
 	private File projectDirectoryPath;
 	private String dirPath;
-
 	private JavaIdentifier javaIdentifier = new JavaIdentifier();
 	private JavaKeyword javaKeyword = new JavaKeyword();
 	private JavaLiteral javaLiteral = new JavaLiteral();
 	private JavaOperator javaOperator = new JavaOperator();
 	private JavaSeparator javaSeparator = new JavaSeparator();
-
 	public static List<ClassInfo> classes = new ArrayList<ClassInfo>();
+
+	private XSSFWorkbook workbook = new XSSFWorkbook();
+	XSSFSheet spreadsheet = workbook.createSheet("sheet");
+	List<Object[]> excelData = new ArrayList<Object[]>();
 
 	public ClassParser(File projectDir, String parsingPath) {
 		projectDirectoryPath = projectDir;
@@ -36,12 +41,18 @@ public class ClassParser {
 	}
 
 	public void ParseJavaCode() {
+
 		JavaIdentifier.SetPredefinedClasses();
 		JavaIdentifier.SetPredefinedMethods();
 		IterateOnProjectDirectory(projectDirectoryPath);
 		ProcessAllClasses();
+		try {
+			CreateExcelMappingSheet();
+		} catch (IOException e) {
+			System.out.print(e);
+		}
+		System.out.println("Done");
 	}
-
 
 	public void IterateOnProjectDirectory(File projectDir) {
 		new DirExplorer((level, path, file) -> path.endsWith(".java"), (level, path, file) -> {
@@ -54,8 +65,8 @@ public class ClassParser {
 						FillClassInfoDict(n, file);
 					}
 				}.visit(StaticJavaParser.parse(file), null);
-			} catch (IOException e) {
-				System.out.println(e);
+			} catch (Exception e) {
+				System.out.println(file + " : " + e);
 			}
 		}).explore(projectDir);
 
@@ -82,9 +93,7 @@ public class ClassParser {
 		}
 		return null;
 	}
-	    
-	   
-	
+
 	private List<ClassInfo> GetInnerClassesForClassOrInterfaceDeclaration(ClassOrInterfaceDeclaration n) {
 		List<ClassOrInterfaceDeclaration> internalClasses = unmodifiableList(
 				n.getMembers().stream().filter(m -> m instanceof ClassOrInterfaceDeclaration)
@@ -113,34 +122,29 @@ public class ClassParser {
 		classes.remove(innerClassInfo);
 		return innerClassInfo;
 	}
-	
-	
-	private String GetFilePath(String string, String path) {
-		String parent = Paths.get(path).getParent().getFileName().toString();
-		String filePath = dirPath + (parent + "_" + string + ".txt");
-		return filePath;
-	}
 
 	protected void ProcessAllClasses() {
 		for (ClassInfo classInfo : classes) {
-			System.out.println("Processing  " + classInfo.getName());
+			//System.out.println("Processing  " + classInfo.getName());
 			javaIdentifier = new JavaIdentifier();
-			TokenFileWriter tokensFile = new TokenFileWriter(GetFilePath(classInfo.getName(), classInfo.getPath()));
-			Optional<TokenRange> tokens = classInfo.getTokens();
-
-			tokens.get().forEach(t -> TokenizeClass(classInfo, t, tokensFile));
-			tokensFile.CloseFile();
+			try {
+				TokenFileWriter tokensFile = new TokenFileWriter(GetFilePath(classInfo.getName(), classInfo.getPath()));
+				Optional<TokenRange> tokens = classInfo.getTokens();
+				tokens.get().forEach(t -> TokenizeClass(classInfo, t, tokensFile));
+				tokensFile.CloseFile();
+			} catch (Exception e) {
+				System.out.println(classInfo.getPath() + " : " + e);
+			}
 		}
 	}
 
 	private void TokenizeClass(ClassInfo classInfo, JavaToken t, TokenFileWriter tokensFile) {
 
 		ClassInfo innerClass = isInnerClassToken(classInfo.getInnerClasses(), t);
-		
+
 		if (innerClass != null) {
 			TokenizeCode(innerClass, t, tokensFile);
-		}
-		else {
+		} else {
 			TokenizeCode(classInfo, t, tokensFile);
 		}
 	}
@@ -157,7 +161,6 @@ public class ClassParser {
 				return innerClass;
 			}
 		}
-
 		return null;
 	}
 
@@ -166,34 +169,43 @@ public class ClassParser {
 		if (token.getCategory().isWhitespaceOrComment()) {
 
 		} else if (token.getCategory().isIdentifier()) {
-			tokensFile.WriteLineToFile("Identifier");
-			tokensFile.WriteLineToFile(
-					token.getText() + "	->	" + javaIdentifier.GetIdentifierToken(token, classInfo, tokensFile));
-			tokensFile.WriteLineToFile("---------------------------------------------------");
+			tokensFile.WriteToFile(javaIdentifier.GetIdentifierToken(token, classInfo));
 
 		} else if (token.getCategory().isKeyword()) {
-			tokensFile.WriteLineToFile("Keyword");
-			tokensFile.WriteLineToFile(token.getText() + "	->	" + javaKeyword.javaKeywordsDict.get(token.getText()));
-			tokensFile.WriteLineToFile("---------------------------------------------------");
-
+			tokensFile.WriteToFile(javaKeyword.javaKeywordsDict.get(token.getText()));
 		} else if (token.getCategory().isLiteral()) {
-			tokensFile.WriteLineToFile("Literal");
-			tokensFile.WriteLineToFile(token.getText() + "	->	" + javaLiteral.GetLiteral(token));
-			tokensFile.WriteLineToFile("---------------------------------------------------");
+			tokensFile.WriteToFile(javaLiteral.GetLiteral(token));
 
 		} else if (token.getCategory().isSeparator()) {
-			tokensFile.WriteLineToFile("Separator");
-			tokensFile.WriteLineToFile(
-					token.getText() + "	->	" + javaSeparator.javaSeparatorsDict.get(token.getText()));
-			tokensFile.WriteLineToFile("---------------------------------------------------");
+			tokensFile.WriteToFile(javaSeparator.javaSeparatorsDict.get(token.getText()));
 
 		} else if (token.getCategory().isOperator()) {
-			tokensFile.WriteLineToFile("Operator");
-			tokensFile.WriteLineToFile(
-					token.getText() + "	->	" + javaOperator.javaOperatorsDict.get(token.getText()));
-			tokensFile.WriteLineToFile("---------------------------------------------------");
-		
+			tokensFile.WriteToFile(javaOperator.javaOperatorsDict.get(token.getText()));
+		}
+	}
+
+	private String GetFilePath(String string, String absPath) {
+		String parent = Paths.get(absPath).getParent().getFileName().toString();
+		String filePath = dirPath + (parent + "_" + string + ".txt");
+		excelData.add(new Object[] { absPath, filePath });
+		return filePath;
+	}
+
+	private void CreateExcelMappingSheet() throws IOException {
+		XSSFRow row;
+		int rowid = 0;
+		for (Object[] rowItem : excelData) {
+			row = spreadsheet.createRow(rowid++);
+			int cellId = 0;
+			for (Object obj : rowItem) {
+				Cell cell = row.createCell(cellId++);
+				cell.setCellValue((String) obj);
+			}
 		}
 
+		FileOutputStream out;
+		out = new FileOutputStream(new File(dirPath + "Mapping.xlsx"));
+		workbook.write(out);
+		out.close();
 	}
 }

@@ -62,8 +62,14 @@ public class JavaIdentifier {
 		predefinedClasses.put("FileReader", Constants.Class_Token + (++Constants.classIterator));
 		predefinedClasses.put("FileWriter", Constants.Class_Token + (++Constants.classIterator));
 		predefinedClasses.put("File", Constants.Class_Token + (++Constants.classIterator));
-		
+		predefinedClasses.put("Thread", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("Throwable", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("Map", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("List", Constants.Class_Token + (++Constants.classIterator));
+		predefinedClasses.put("URL", Constants.Class_Token + (++Constants.classIterator));
+
 	}
+
 	public static void SetPredefinedMethods() {
 		// String Methods
 		predefinedMethods.put("toString", Constants.Method_Token + (++Constants.methodIterator));
@@ -73,9 +79,10 @@ public class JavaIdentifier {
 		predefinedMethods.put("length", Constants.Method_Token + (++Constants.methodIterator));
 		predefinedMethods.put("append", Constants.Method_Token + (++Constants.methodIterator));
 		predefinedMethods.put("add", Constants.Method_Token + (++Constants.methodIterator));
-		predefinedMethods.put("arraycopy", Constants.Method_Token + (++Constants.methodIterator));
+        //Exception
+		predefinedMethods.put("printStackTrace", Constants.Method_Token + (++Constants.methodIterator));
 	}
-	
+
 	public static void AddClassTokens(ClassOrInterfaceDeclaration n, ClassInfo classInfo) {
 		if (!classesDict.containsKey(classInfo.getName())) {
 			classesDict.put(classInfo.getName(), Constants.Class_Token + (++Constants.classIterator));
@@ -91,9 +98,14 @@ public class JavaIdentifier {
 			MethodInfo methodInfo = new MethodInfo();
 			methodInfo.setName(m.getName().toString());
 			methodInfo.setTokens(m.getTokenRange());
-			methodInfo.setMethodBodyBegin(m.getBody().get().getTokenRange().get().getBegin().getRange().get().begin);
-			methodInfo.setMethodBodyEnd(m.getBody().get().getTokenRange().get().getEnd().getRange().get().end);
-
+			if (n.isInterface() || m.getBody().equals(Optional.empty())) {
+				methodInfo.setMethodBodyBegin(null);
+				methodInfo.setMethodBodyEnd(null);
+			} else {
+				methodInfo
+						.setMethodBodyBegin(m.getBody().get().getTokenRange().get().getBegin().getRange().get().begin);
+				methodInfo.setMethodBodyEnd(m.getBody().get().getTokenRange().get().getEnd().getRange().get().end);
+			}
 			NodeList<Parameter> parameters = m.getParameters();
 
 			for (Parameter p : parameters)
@@ -141,62 +153,50 @@ public class JavaIdentifier {
 		}
 	}
 
-	public int GetIdentifierToken(JavaToken token, ClassInfo classInfo, TokenFileWriter tokensFile) {
+	public int GetIdentifierToken(JavaToken token, ClassInfo classInfo) {
 		// Class Name
 		if (classesDict.containsKey(token.getText())) {
 			if (IsConstructor(token, classInfo.getName())) {
 				methodVariables = new Hashtable<String, Integer>();
 				latestCalledMethod = token.getText();
-				tokensFile.WriteLineToFile("Constructor");
 				return classesDict.get(token.getText());
 			}
 			latestCalledClass = token.getText();
-			tokensFile.WriteLineToFile("Class");
 			return classesDict.get(token.getText());
 		}
 		// Method Name
 		else if (isMethod(token, classInfo)) {
-			// latestCalledMethod =
-			// classInfo.getJavaParserClass().getMethodsByName(token.getText()).get(0);
 			methodVariables = new Hashtable<String, Integer>();
 			latestCalledMethod = token.getText();
-			tokensFile.WriteLineToFile("Method");
 			return classInfo.getMethodsDict().get(token.getText());
 		}
 		// Method Parameter
 		else if (IsMethodParameter(token, classInfo)) {
-			tokensFile.WriteLineToFile("Add a Parameter Variable");
 			methodVariables.put(token.getText(), ++Constants.Identifier_Token);
 			return Constants.Identifier_Token;
 		}
 		// Field Name
 		else if (IsClassField(token, classInfo)) {
-			tokensFile.WriteLineToFile("Field");
 			return classInfo.getFieldsDict().get(token.getText());
 		}
 		// Predefined Class
 		else if (predefinedClasses.containsKey(token.getText())) {
-			tokensFile.WriteLineToFile("Predefined Class");
 			return predefinedClasses.get(token.getText());
 		}
 		// method call for a predefined class
 		else if (predefinedMethods.containsKey(token.getText())) {
-			tokensFile.WriteLineToFile("Predefined Method");
 			return predefinedMethods.get(token.getText());
 		}
 		// Predefined method Variable
 		else if (isMethodVariable(token, classInfo)) {
-			tokensFile.WriteLineToFile("Predefined Method Variable/Prameter");
 			return methodVariables.get(token.getText());
 
 		} else if (IsMethodCalledFromAnotherClass(token)) {
-			tokensFile.WriteLineToFile("Another Class Called " + latestCalledClass);
 			return GetClassMembersToken(token.getText());
 		}
 		// Add a Method Variable
 		else {
 
-			tokensFile.WriteLineToFile("Add a Method Variable");
 			methodVariables.put(token.getText(), ++Constants.Identifier_Token);
 			return Constants.Identifier_Token;
 		}
@@ -290,6 +290,10 @@ public class JavaIdentifier {
 	}
 
 	private boolean withinMethodBodyTokenRange(ModifierInfo modifier, JavaToken token) {
+		// no body (interface or abstract class)
+		if (modifier.getMethodBodyBegin() == null || modifier.getMethodBodyEnd() == null)
+			return false;
+
 		if (token.getRange().get().begin.isAfterOrEqual(modifier.getMethodBodyBegin())
 				&& token.getRange().get().end.isBeforeOrEqual(modifier.getMethodBodyEnd()))
 			return true;
@@ -329,7 +333,8 @@ public class JavaIdentifier {
 
 	private JavaToken GetPreviousToken(JavaToken token) {
 		Optional<JavaToken> previousToken = token.getPreviousToken();
-		while (previousToken.get().getText().equals(" ")) {
+		while (previousToken.get().getText().equals(" ")||previousToken.get().getText().equals("\t") 
+				||previousToken.get().getText().equals("\r")) {
 			previousToken = previousToken.get().getPreviousToken();
 		}
 		return previousToken.get();

@@ -8,13 +8,13 @@ public class Main {
 		
 		try {
 			
-			File projectDir = new File("D:\\Master\\Thesis\\RDT\\C_Data\\Projects\\jasml-0.1");
-			ClassParser parser = new ClassParser(projectDir,"D:\\Master\\Thesis\\RDT\\path\\");
+			File projectDir = new File("D:\\Master\\Thesis\\RDT\\C_Data\\Projects\\xmojo-5.0.0");
+			ClassParser parser = new ClassParser(projectDir,"D:\\Master\\Thesis\\CodeSmellsDetector\\DL_Approach\\Data\\xmojo-5.0.0\\");
 			parser.ParseJavaCode();
 		} catch (Exception e) {
 			System.out.println(e);
 		}
 
 	}
-
+	
 }
